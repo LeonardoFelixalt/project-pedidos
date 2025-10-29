@@ -1,3 +1,5 @@
+'use client'
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,11 +16,39 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { redirect } from "next/navigation";
+import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import { Loader2 } from "lucide-react";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+
+  const [loading, setloading] = useState(false)
+  const [error, setError] = useState("")
+
+  function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email") as string;
+    const senha = formData.get("senha") as string;
+
+    authClient.signIn.email({
+      email: email,
+      password: senha
+    },
+    {
+      onSuccess: () => redirect("/dashboard"),
+      onRequest: () => setloading(true),
+      onResponse:() => setloading(false),
+      onError: (ctx) => setError(ctx.error.message)
+    }
+
+  )
+  }
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -29,13 +59,14 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleLogin}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
                   id="email"
                   type="email"
+                  name="email"
                   placeholder="m@example.com"
                   required
                 />
@@ -50,10 +81,10 @@ export function LoginForm({
                     Forgot your password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input id="password" type="password" name="senha" required />
               </Field>
               <Field>
-                <Button type="submit">Login</Button>
+                <Button disabled={loading} type="submit">{loading ? <Loader2 className="animate-spin" /> : "Login"}</Button>
                 <Button variant="outline" type="button">
                   Login with Google
                 </Button>
@@ -62,6 +93,7 @@ export function LoginForm({
                 </FieldDescription>
               </Field>
             </FieldGroup>
+            {error && error}
           </form>
         </CardContent>
       </Card>
