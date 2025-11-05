@@ -1,18 +1,19 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
-import { excluirCategoria } from '../actions'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 import { Trash2 } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { excluirCategoria } from '../actions'
+import { toast } from 'sonner'
 
 interface DeleteCategoriaProps {
   categoria: {
@@ -23,57 +24,55 @@ interface DeleteCategoriaProps {
 
 export default function DeleteCategoria({ categoria }: DeleteCategoriaProps) {
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [isPending, startTransition] = useTransition()
 
   async function handleDelete() {
-    setLoading(true)
-    setError('')
-    
-    const result = await excluirCategoria(categoria.id)
-    
-    if (result.error) {
-      setError(result.error)
-      setLoading(false)
-    } else {
-      setOpen(false)
-      setLoading(false)
-    }
+    startTransition(async () => {
+      const result = await excluirCategoria(categoria.id)
+
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Categoria excluída com sucesso!')
+        setOpen(false)
+      }
+    })
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="destructive" size="sm">
-          <Trash2 className="size-4" />
-          Excluir
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
-      </SheetTrigger>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Excluir Categoria</SheetTitle>
-          <SheetDescription>
-            Tem certeza que deseja excluir a categoria &quot;{categoria.nome}&quot;?
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Excluir Categoria</DialogTitle>
+          <DialogDescription>
+            Tem certeza que deseja excluir a categoria <strong>{categoria.nome}</strong>?
             Esta ação não pode ser desfeita.
-          </SheetDescription>
-        </SheetHeader>
-        
-        <div className="flex flex-col gap-4 py-4">
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
-        </div>
-
-        <SheetFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
             Cancelar
           </Button>
-          <Button type="button" variant="destructive" onClick={handleDelete} disabled={loading}>
-            {loading ? 'Excluindo...' : 'Excluir'}
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isPending}
+          >
+            {isPending ? 'Excluindo...' : 'Excluir Categoria'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
-
