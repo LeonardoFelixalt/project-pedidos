@@ -1,20 +1,21 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Edit } from 'lucide-react'
+import { useState, useTransition } from 'react'
 import { editarCategoria } from '../actions'
-import { Pencil } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface EditCategoriaProps {
   categoria: {
@@ -25,71 +26,64 @@ interface EditCategoriaProps {
 
 export default function EditCategoria({ categoria }: EditCategoriaProps) {
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [isPending, startTransition] = useTransition()
 
   async function handleSubmit(formData: FormData) {
-    setLoading(true)
-    setError('')
-    
-    const result = await editarCategoria(categoria.id, formData)
-    
-    if (result.error) {
-      setError(result.error)
-      setLoading(false)
-    } else {
-      setOpen(false)
-      setLoading(false)
-    }
+    startTransition(async () => {
+      const result = await editarCategoria(categoria.id, formData)
+
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Categoria atualizada com sucesso!')
+        setOpen(false)
+      }
+    })
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Pencil className="size-4" />
-          Editar
+          <Edit className="h-4 w-4" />
         </Button>
-      </SheetTrigger>
-      <SheetContent>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar Categoria</DialogTitle>
+          <DialogDescription>
+            Altere o nome da categoria.
+          </DialogDescription>
+        </DialogHeader>
         <form action={handleSubmit}>
-          <SheetHeader>
-            <SheetTitle>Editar Categoria</SheetTitle>
-            <SheetDescription>
-              Atualize o nome da categoria.
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="flex flex-col gap-4 py-4">
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="nome">Nome da Categoria</FieldLabel>
-                <Input
-                  id="nome"
-                  name="nome"
-                  defaultValue={categoria.nome}
-                  placeholder="Ex: Bebidas, Lanches..."
-                  required
-                  disabled={loading}
-                />
-              </Field>
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
-            </FieldGroup>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome da Categoria</Label>
+              <Input
+                id="nome"
+                name="nome"
+                defaultValue={categoria.nome}
+                placeholder="Ex: Pizzas, Bebidas, Sobremesas..."
+                required
+                disabled={isPending}
+              />
+            </div>
           </div>
-
-          <SheetFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={isPending}
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar'}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
-
