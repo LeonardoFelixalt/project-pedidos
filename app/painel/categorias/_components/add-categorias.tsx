@@ -1,90 +1,78 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useState, useTransition } from 'react'
 import { criarCategoria } from '../actions'
-import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function AddCategorias() {
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [isPending, startTransition] = useTransition()
 
   async function handleSubmit(formData: FormData) {
-    setLoading(true)
-    setError('')
-    
-    const result = await criarCategoria(formData)
-    
-    if (result.error) {
-      setError(result.error)
-      setLoading(false)
-    } else {
-      setOpen(false)
-      setLoading(false)
-      // Reset form
-      const form = document.getElementById('add-categoria-form') as HTMLFormElement
-      form?.reset()
-    }
+    startTransition(async () => {
+      const result = await criarCategoria(formData)
+
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Categoria criada com sucesso!')
+        setOpen(false)
+      }
+    })
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button>
-          <Plus className="size-4" />
-          Adicionar Categoria
-        </Button>
-      </SheetTrigger>
-      <SheetContent>
-        <form id="add-categoria-form" action={handleSubmit}>
-          <SheetHeader>
-            <SheetTitle>Adicionar Categoria</SheetTitle>
-            <SheetDescription>
-              Preencha o nome da categoria que deseja adicionar.
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="flex flex-col gap-4 py-4">
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="nome">Nome da Categoria</FieldLabel>
-                <Input
-                  id="nome"
-                  name="nome"
-                  placeholder="Ex: Bebidas, Lanches..."
-                  required
-                  disabled={loading}
-                />
-              </Field>
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
-            </FieldGroup>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Adicionar Categoria</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Adicionar Categoria</DialogTitle>
+          <DialogDescription>
+            Crie uma nova categoria para organizar seus produtos.
+          </DialogDescription>
+        </DialogHeader>
+        <form action={handleSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome da Categoria</Label>
+              <Input
+                id="nome"
+                name="nome"
+                placeholder="Ex: Pizzas, Bebidas, Sobremesas..."
+                required
+                disabled={isPending}
+              />
+            </div>
           </div>
-
-          <SheetFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={isPending}
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar'}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Criando...' : 'Criar Categoria'}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
-
